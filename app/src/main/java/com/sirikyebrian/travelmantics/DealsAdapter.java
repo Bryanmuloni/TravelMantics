@@ -1,11 +1,11 @@
 package com.sirikyebrian.travelmantics;
 
-import android.app.Activity;
 import android.content.Intent;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.ImageView;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
@@ -17,6 +17,7 @@ import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
+import com.squareup.picasso.Picasso;
 
 import java.util.ArrayList;
 
@@ -31,6 +32,7 @@ public class DealsAdapter extends RecyclerView.Adapter<DealsAdapter.DealsViewHol
     private FirebaseDatabase mFirebaseDatabase;
     private DatabaseReference mDatabaseReference;
     private ChildEventListener mChildEventListener;
+    ImageView imageView;
 
     public DealsAdapter() {
         mFirebaseDatabase = FirebaseUtil.mFirebaseDatabase;
@@ -103,11 +105,13 @@ public class DealsAdapter extends RecyclerView.Adapter<DealsAdapter.DealsViewHol
         private TextView descriptionText;
         private TextView priceText;
 
+
         public DealsViewHolder(@NonNull View itemView) {
             super(itemView);
             titleText = itemView.findViewById(R.id.textDealTitle);
             descriptionText = itemView.findViewById(R.id.textDealDescription);
             priceText = itemView.findViewById(R.id.textDealPrice);
+            imageView = itemView.findViewById(R.id.dealImage);
             itemView.setOnClickListener(this);
         }
 
@@ -115,6 +119,7 @@ public class DealsAdapter extends RecyclerView.Adapter<DealsAdapter.DealsViewHol
             titleText.setText(deal.getTitle());
             descriptionText.setText(deal.getDescription());
             priceText.setText(deal.getPrice());
+            showImage(deal.getImageUrl());
 
         }
 
@@ -126,6 +131,13 @@ public class DealsAdapter extends RecyclerView.Adapter<DealsAdapter.DealsViewHol
             Intent intent = new Intent(v.getContext(), DealActivity.class);
             intent.putExtra("Deal", dealSelected);
             v.getContext().startActivity(intent);
+        }
+
+        private void showImage(String url) {
+            if (url != null && !url.isEmpty()) {
+                Picasso.get().load(url).resize(160, 160)
+                        .centerCrop().into(imageView);
+            }
         }
     }
 

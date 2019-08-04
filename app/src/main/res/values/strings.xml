@@ -8,4 +8,5 @@
     <string name="label_insert_deal">New Travel Deal</string>
     <string name="delete_deal_action">Delete Travel Deal</string>
     <string name="action_logout">LogOut</string>
+    <string name="price_text">3000</string>
 </resources>

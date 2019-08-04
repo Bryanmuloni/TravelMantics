@@ -1,20 +1,38 @@
 package com.sirikyebrian.travelmantics;
 
 
+import android.app.Activity;
 import android.content.Intent;
+import android.content.res.Resources;
+import android.net.Uri;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.view.View;
+import android.widget.Button;
 import android.widget.EditText;
+import android.widget.ImageView;
 import android.widget.Toast;
 
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 
+import com.google.android.gms.tasks.Continuation;
+import com.google.android.gms.tasks.OnCompleteListener;
+import com.google.android.gms.tasks.OnFailureListener;
+import com.google.android.gms.tasks.OnSuccessListener;
+import com.google.android.gms.tasks.Task;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
+import com.google.firebase.storage.StorageReference;
+import com.google.firebase.storage.UploadTask;
+import com.squareup.picasso.Picasso;
 
 public class DealActivity extends AppCompatActivity {
     private static final String TRAVEL_DEALS_REFERENCE = "travel_deals";
+    public static final int PICTURE_REQUEST_CODE = 102;
     private FirebaseDatabase mFirebaseDatabase;
     private DatabaseReference mDatabaseReference;
 
@@ -23,6 +41,8 @@ public class DealActivity extends AppCompatActivity {
     EditText txtDescription;
     TravelDeal travelDeal;
     private TravelDealListActivity travelDealListActivity;
+    ImageView travelDealImage;
+    private Button uploadImageButton;
 
 
     @Override
@@ -38,16 +58,68 @@ public class DealActivity extends AppCompatActivity {
         txtTitle = findViewById(R.id.txtTitle);
         txtPrice = findViewById(R.id.txtPrice);
         txtDescription = findViewById(R.id.txtDescription);
+        travelDealImage = findViewById(R.id.dealImageView);
 
         Intent intent = getIntent();
-        TravelDeal deal = (TravelDeal) intent.getSerializableExtra("Deal");
-        if (deal == null) {
-            deal = new TravelDeal();
+        TravelDeal travelDeal = (TravelDeal) intent.getSerializableExtra("Deal");
+        if (travelDeal == null) {
+            travelDeal = new TravelDeal();
         }
-        this.travelDeal = deal;
-        txtTitle.setText(deal.getTitle());
-        txtDescription.setText(deal.getDescription());
-        txtPrice.setText(deal.getPrice());
+        this.travelDeal = travelDeal;
+        txtTitle.setText(travelDeal.getTitle());
+        txtDescription.setText(travelDeal.getDescription());
+        txtPrice.setText(travelDeal.getPrice());
+        showImage(travelDeal.getImageUrl());
+
+
+        uploadImageButton = findViewById(R.id.uploadButton);
+        uploadImageButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Intent imageIntent = new Intent(Intent.ACTION_GET_CONTENT);
+                imageIntent.setType("image/jpeg");
+                imageIntent.putExtra(Intent.EXTRA_LOCAL_ONLY, true);
+                startActivityForResult(imageIntent.createChooser(imageIntent, "Choose Picture"), PICTURE_REQUEST_CODE);
+            }
+        });
+
+
+    }
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        if (requestCode == PICTURE_REQUEST_CODE && resultCode == Activity.RESULT_OK) {
+            Uri uri = data.getData();
+            final StorageReference storageReference =
+                    FirebaseUtil.mStorageReference.child(uri.getLastPathSegment());
+
+            UploadTask uploadTask = storageReference.putFile(uri);
+            Task<Uri> uriTask = uploadTask.continueWithTask(new Continuation<UploadTask.TaskSnapshot, Task<Uri>>() {
+                @Override
+                public Task<Uri> then(@NonNull Task<UploadTask.TaskSnapshot> task) throws Exception {
+                    if (!task.isSuccessful()) {
+                        throw task.getException();
+                    }
+                    return storageReference.getDownloadUrl();
+                }
+            }).addOnCompleteListener(new OnCompleteListener<Uri>() {
+                @Override
+                public void onComplete(@NonNull Task<Uri> task) {
+                    if (task.isSuccessful()) {
+                        Uri downloadUri = task.getResult();
+                        String url = downloadUri.toString();
+                        String name = task.getResult().getPath();
+                        travelDeal.setImageUrl(url);
+                        travelDeal.setImageName(name);
+
+                        Log.d("Url", url);
+                        Log.d("Name", name);
+                        showImage(url);
+                    }
+                }
+            });
+        }
     }
 
     @Override
@@ -57,10 +129,12 @@ public class DealActivity extends AppCompatActivity {
             menu.findItem(R.id.action_delete_deal).setVisible(true);
             menu.findItem(R.id.action_save_deal).setVisible(true);
             enableEditTexts(true);
+            uploadImageButton.setEnabled(true);
         } else {
             menu.findItem(R.id.action_delete_deal).setVisible(false);
             menu.findItem(R.id.action_save_deal).setVisible(false);
             enableEditTexts(false);
+            uploadImageButton.setEnabled(false);
         }
         return true;
     }
@@ -107,10 +181,26 @@ public class DealActivity extends AppCompatActivity {
             return;
         }
         mDatabaseReference.child(travelDeal.getId()).removeValue();
+        if (travelDeal.getImageName() != null && !travelDeal.getImageName().isEmpty()) {
+            StorageReference imageReference =
+                    FirebaseUtil.mFirebaseStorage.getReference().child(travelDeal.getImageName());
+            imageReference.delete().addOnSuccessListener(new OnSuccessListener<Void>() {
+                @Override
+                public void onSuccess(Void aVoid) {
+                    Log.d("Delete Image", "Image Deleted successfully");
+                }
+            }).addOnFailureListener(new OnFailureListener() {
+                @Override
+                public void onFailure(@NonNull Exception e) {
+                    Log.d("Delete Image", e.getMessage());
+                }
+            });
+        }
     }
 
     private void backToList() {
-        startActivity(new Intent(this, TravelDealListActivity.class));
+//        startActivity(new Intent(this, TravelDealListActivity.class));
+        this.finish();
     }
 
     private void clean() {
@@ -124,5 +214,15 @@ public class DealActivity extends AppCompatActivity {
         txtTitle.setEnabled(isEnabled);
         txtDescription.setEnabled(isEnabled);
         txtPrice.setEnabled(isEnabled);
+    }
+
+    private void showImage(String url) {
+        if (url != null && !url.isEmpty()) {
+            int width = Resources.getSystem().getDisplayMetrics().widthPixels;
+            Picasso.get().load(url)
+                    .resize(width, width * 2 / 3)
+                    .centerCrop()
+                    .into(travelDealImage);
+        }
     }
 }
