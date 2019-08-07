@@ -9,4 +9,16 @@
     <string name="delete_deal_action">Delete Travel Deal</string>
     <string name="action_logout">LogOut</string>
     <string name="price_text">3000</string>
+    <string name="travel_deals_reference">travel_deals</string>
+    <string name="string_choose_picture">Choose Picture</string>
+    <string name="string_image_upload_success">Image Upload successful</string>
+    <string name="string_save_before_deleting">Please save the travelDeal before deleting</string>
+    <string name="string_image_delete">Image Deleted successfully</string>
+    <string name="string_user_logged_out">User Logged Out</string>
+    <string name="string_welcome">Welcome back!</string>
+    <string name="string_deals_pictures_reference">deals_pictures</string>
+    <string name="string_administrators_reference">administrators</string>
+    <string name="string_message_admin">You are an administrator</string>
+    <string name="string_image_upload">Image Uploaded Successfully</string>
+    <string name="string_image_upload_failure">Image Upload failure</string>
 </resources>

@@ -26,6 +26,7 @@ import java.util.List;
  */
 public class FirebaseUtil {
     private static final int RC_SIGN_IN = 100;
+    private static final String LOG_TAG = FirebaseUtil.class.getSimpleName();
     public static FirebaseDatabase mFirebaseDatabase;
     public static DatabaseReference mDatabaseReference;
 
@@ -59,7 +60,8 @@ public class FirebaseUtil {
                         String userId = firebaseAuth.getUid();
                         checkAdmin(userId);
                     }
-                    Toast.makeText(callerActivity.getApplicationContext(), "Welcome back!",
+                    Toast.makeText(callerActivity.getApplicationContext(),
+                            callerActivity.getString(R.string.string_welcome),
                             Toast.LENGTH_SHORT).show();
                 }
             };
@@ -78,7 +80,7 @@ public class FirebaseUtil {
             public void onChildAdded(@NonNull DataSnapshot dataSnapshot, @Nullable String s) {
                 FirebaseUtil.isAdmin = true;
                 caller.showMenu();
-                Log.d("Admin", "You are an administrator");
+                Log.d(LOG_TAG, String.valueOf(R.string.string_message_admin));
 
             }
 

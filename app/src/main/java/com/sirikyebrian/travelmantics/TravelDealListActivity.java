@@ -16,7 +16,6 @@ import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.Task;
 
 public class TravelDealListActivity extends AppCompatActivity {
-    public static final String TRAVEL_DEALS_REFERENCE = "travel_deals";
     private static final String LOG_TAG = TravelDealListActivity.class.getSimpleName();
     private RecyclerView mRecyclerView;
 
@@ -31,7 +30,7 @@ public class TravelDealListActivity extends AppCompatActivity {
     @Override
     protected void onResume() {
         super.onResume();
-        FirebaseUtil.openFirebaseReference(TRAVEL_DEALS_REFERENCE,this);
+        FirebaseUtil.openFirebaseReference(getString(R.string.travel_deals_reference),this);
         mRecyclerView = findViewById(R.id.dealsRecyclerView);
         mRecyclerView.setLayoutManager(new LinearLayoutManager(this));
         final DealsAdapter dealsAdapter = new DealsAdapter();
@@ -75,7 +74,8 @@ public class TravelDealListActivity extends AppCompatActivity {
                         .addOnCompleteListener(new OnCompleteListener<Void>() {
                             public void onComplete(@NonNull Task<Void> task) {
                                 // ...
-                                Log.d(LOG_TAG,"User Logged Out");
+                                Log.d(LOG_TAG,
+                                        getResources().getString(R.string.string_user_logged_out));
                                 FirebaseUtil.attachListener();
                             }
                         });

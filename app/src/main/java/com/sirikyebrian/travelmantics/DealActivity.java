@@ -31,8 +31,10 @@ import com.google.firebase.storage.UploadTask;
 import com.squareup.picasso.Picasso;
 
 public class DealActivity extends AppCompatActivity {
-    private static final String TRAVEL_DEALS_REFERENCE = "travel_deals";
+
     public static final int PICTURE_REQUEST_CODE = 102;
+    private static final String LOG_TAG = DealActivity.class.getSimpleName();
+    public static final String EXTRA_DEAL = "Deal";
     private FirebaseDatabase mFirebaseDatabase;
     private DatabaseReference mDatabaseReference;
 
@@ -51,7 +53,7 @@ public class DealActivity extends AppCompatActivity {
         setContentView(R.layout.activity_deal);
         travelDealListActivity = new TravelDealListActivity();
 
-        FirebaseUtil.openFirebaseReference(TRAVEL_DEALS_REFERENCE, travelDealListActivity);
+        FirebaseUtil.openFirebaseReference(getString(R.string.travel_deals_reference), travelDealListActivity);
         mFirebaseDatabase = FirebaseUtil.mFirebaseDatabase;
         mDatabaseReference = FirebaseUtil.mDatabaseReference;
 
@@ -61,7 +63,7 @@ public class DealActivity extends AppCompatActivity {
         travelDealImage = findViewById(R.id.dealImageView);
 
         Intent intent = getIntent();
-        TravelDeal travelDeal = (TravelDeal) intent.getSerializableExtra("Deal");
+        TravelDeal travelDeal = (TravelDeal) intent.getSerializableExtra(EXTRA_DEAL);
         if (travelDeal == null) {
             travelDeal = new TravelDeal();
         }
@@ -76,10 +78,13 @@ public class DealActivity extends AppCompatActivity {
         uploadImageButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
+                String mimeType = "image/jpeg";
                 Intent imageIntent = new Intent(Intent.ACTION_GET_CONTENT);
-                imageIntent.setType("image/jpeg");
+                imageIntent.setType(mimeType);
                 imageIntent.putExtra(Intent.EXTRA_LOCAL_ONLY, true);
-                startActivityForResult(imageIntent.createChooser(imageIntent, "Choose Picture"), PICTURE_REQUEST_CODE);
+                startActivityForResult(imageIntent.createChooser(imageIntent,
+                        getResources().getString(R.string.string_choose_picture)),
+                        PICTURE_REQUEST_CODE);
             }
         });
 
@@ -90,11 +95,11 @@ public class DealActivity extends AppCompatActivity {
     protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
         if (requestCode == PICTURE_REQUEST_CODE && resultCode == Activity.RESULT_OK) {
-            Uri uri = data.getData();
+            Uri imageUri = data.getData();
             final StorageReference storageReference =
-                    FirebaseUtil.mStorageReference.child(uri.getLastPathSegment());
+                    FirebaseUtil.mStorageReference.child(imageUri.getLastPathSegment());
 
-            UploadTask uploadTask = storageReference.putFile(uri);
+            UploadTask uploadTask = storageReference.putFile(imageUri);
             Task<Uri> uriTask = uploadTask.continueWithTask(new Continuation<UploadTask.TaskSnapshot, Task<Uri>>() {
                 @Override
                 public Task<Uri> then(@NonNull Task<UploadTask.TaskSnapshot> task) throws Exception {
@@ -110,13 +115,28 @@ public class DealActivity extends AppCompatActivity {
                         Uri downloadUri = task.getResult();
                         String url = downloadUri.toString();
                         String name = task.getResult().getPath();
+
                         travelDeal.setImageUrl(url);
                         travelDeal.setImageName(name);
-
-                        Log.d("Url", url);
-                        Log.d("Name", name);
+                        Log.d(LOG_TAG, "Image Uri is: " + downloadUri);
+                        Log.d(LOG_TAG,"Image name is: "+name);
                         showImage(url);
                     }
+                }
+            });
+            uriTask.addOnSuccessListener(new OnSuccessListener<Uri>() {
+                @Override
+                public void onSuccess(Uri uri) {
+                    Log.d(LOG_TAG, getResources().getString(R.string.string_image_upload_success));
+                    Toast.makeText(DealActivity.this,
+                            getResources().getString(R.string.string_image_upload),
+                            Toast.LENGTH_SHORT).show();
+                }
+            });
+            uriTask.addOnFailureListener(new OnFailureListener() {
+                @Override
+                public void onFailure(@NonNull Exception e) {
+                    Log.d(LOG_TAG, getResources().getString(R.string.string_image_upload_failure));
                 }
             });
         }
@@ -177,7 +197,8 @@ public class DealActivity extends AppCompatActivity {
 
     private void deleteTravelDeal() {
         if (travelDeal == null) {
-            Toast.makeText(this, "Please save the travelDeal before deleting", Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, getResources().getString(R.string.string_save_before_deleting),
+                    Toast.LENGTH_SHORT).show();
             return;
         }
         mDatabaseReference.child(travelDeal.getId()).removeValue();
@@ -187,12 +208,12 @@ public class DealActivity extends AppCompatActivity {
             imageReference.delete().addOnSuccessListener(new OnSuccessListener<Void>() {
                 @Override
                 public void onSuccess(Void aVoid) {
-                    Log.d("Delete Image", "Image Deleted successfully");
+                    Log.d(LOG_TAG, getResources().getString(R.string.string_image_delete));
                 }
             }).addOnFailureListener(new OnFailureListener() {
                 @Override
                 public void onFailure(@NonNull Exception e) {
-                    Log.d("Delete Image", e.getMessage());
+                    Log.d(LOG_TAG, e.getMessage());
                 }
             });
         }
